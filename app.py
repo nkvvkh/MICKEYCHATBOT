@@ -1,40 +1,42 @@
-import os
 import streamlit as st
+import os
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.messages import HumanMessage, SystemMessage, AIMessage
 
-# 🔐 Set your API key
-os.environ["GOOGLE_API_KEY"] = "GOOGLE_API_KEY"  # Replace with your actual API key
+from google.colab import userdata
+os.environ['GOOGLE_API_KEY']=userdata.get('GOOGLE_API_KEY')
+# Initialize the model
+llm = ChatGoogleGenerativeAI(model="gemini-2.0-flash")
 
-# 🤖 Initialize the Gemini model (Gemini 1.5 Flash is fast & efficient)
-llm = ChatGoogleGenerativeAI(model="gemini-1.5-flash")
+# Streamlit app title
+st.title("🤖 Gemini Chatbot")
+st.markdown("Type a message and press Enter to chat with the AI. Type `quit` to stop.")
 
-# 🧠 Initialize chat history in Streamlit session state
+# Initialize session state
 if "chat_history" not in st.session_state:
     st.session_state.chat_history = [SystemMessage(content="You are a helpful assistant.")]
 
-# 📌 Streamlit app title
-st.title("💬 Chat with Gemini 1.5 Flash")
-st.markdown("Ask me anything!")
+# Input box for user message
+user_input = st.text_input("You:", key="input")
 
-# 🗨️ Display chat history
-for msg in st.session_state.chat_history:
-    if isinstance(msg, HumanMessage):
-        st.chat_message("user").write(msg.content)
-    elif isinstance(msg, AIMessage):
-        st.chat_message("ai").write(msg.content)
+# Process input
+if user_input:
+    if user_input.lower() == "quit":
+        st.markdown("**Chat ended. Refresh to start again.**")
+    else:
+        # Add user message to chat history
+        st.session_state.chat_history.append(HumanMessage(content=user_input))
 
-# 📝 User input
-if prompt := st.chat_input("Type your message..."):
-    # Show user message
-    st.chat_message("user").write(prompt)
-    st.session_state.chat_history.append(HumanMessage(content=prompt))
+        # Get response from model
+        try:
+            result = llm.invoke(st.session_state.chat_history)
+            st.session_state.chat_history.append(AIMessage(content=result.content))
+        except Exception as e:
+            st.error(f"Error: {str(e)}")
 
-    try:
-        # Get Gemini response
-        response = llm.invoke(st.session_state.chat_history)
-        st.chat_message("ai").write(response.content)
-        st.session_state.chat_history.append(AIMessage(content=response.content))
-    except Exception as e:
-        st.error(f"❌ Error: {e}")
-
+# Display chat history
+for message in st.session_state.chat_history:
+    if isinstance(message, HumanMessage):
+        st.markdown(f"**You:** {message.content}")
+    elif isinstance(message, AIMessage):
+        st.markdown(f"**AI:** {message.content}")
