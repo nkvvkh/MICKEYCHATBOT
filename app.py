@@ -1,39 +1,53 @@
-import os
 import streamlit as st
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.messages import HumanMessage, SystemMessage, AIMessage
 
-# 🔐 Set your API key (not recommended for production)
-os.environ["GOOGLE_API_KEY"] = "GOOGLE_API_KEY"
+# --- Sidebar ---
+st.sidebar.title("⚙️ Settings")
+api_key = st.sidebar.text_input("🔑 Google API Key", type="password", key="api_key_input")
 
-llm = ChatGoogleGenerativeAI(model="gemini-2.0-flash")
+if not api_key:
+    st.warning("Please enter your Google API key in the sidebar.")
+    st.stop()
 
-# Streamlit App UI
-st.title("🤖 Gemini Chatbot")
-st.markdown("Type a message and press Enter to chat with the AI. Type `quit` to stop.")
+if st.sidebar.button("🧹 Reset Chat"):
+    st.session_state.chat_history = [SystemMessage(content="You are a helpful assistant.")]
+    st.rerun()
 
-# Initialize chat history
+# --- LLM Setup ---
+llm = ChatGoogleGenerativeAI(
+    model="gemini-2.0-flash",
+    google_api_key=GOOGLE_API_KEY
+)
+
+# --- Initialize chat history ---
 if "chat_history" not in st.session_state:
     st.session_state.chat_history = [SystemMessage(content="You are a helpful assistant.")]
 
-# User input
-user_input = st.text_input("You:", key="input")
+# --- Main Chat UI ---
+st.title("🤖 Gemini Chatbot")
 
-# Process input
-if user_input:
-    if user_input.lower() == "quit":
-        st.markdown("**Chat ended. Refresh to start again.**")
-    else:
-        st.session_state.chat_history.append(HumanMessage(content=user_input))
-        try:
-            result = llm.invoke(st.session_state.chat_history)
-            st.session_state.chat_history.append(AIMessage(content=result.content))
-        except Exception as e:
-            st.error(f"❌ Error: {str(e)}")
-
-# Display messages
+# Show previous chat
 for message in st.session_state.chat_history:
-    if isinstance(message, HumanMessage):
-        st.markdown(f"**You:** {message.content}")
-    elif isinstance(message, AIMessage):
-        st.markdown(f"**AI:** {message.content}")
+    with st.chat_message("user" if isinstance(message, HumanMessage) else "ai"):
+        st.markdown(message.content)
+
+# --- Input box ---
+user_input = st.chat_input("Type your message here...")
+
+if user_input:
+    # Display user message
+    st.chat_message("user").markdown(user_input)
+    st.session_state.chat_history.append(HumanMessage(content=user_input))
+
+    # Get response
+    try:
+        response = llm.invoke(st.session_state.chat_history)
+        st.session_state.chat_history.append(AIMessage(content=response.content))
+
+        # Display response
+        with st.chat_message("ai"):
+            st.markdown(response.content)
+
+    except Exception as e:
+        st.error(f"❌ Something went wrong: {str(e)}")
