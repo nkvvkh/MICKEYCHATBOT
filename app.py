@@ -1,53 +1,77 @@
+import os
 import streamlit as st
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.messages import HumanMessage, SystemMessage, AIMessage
 
-# --- Sidebar ---
-st.sidebar.title("⚙️ Settings")
-api_key = st.sidebar.text_input("🔑 Google API Key", type="password", key="api_key_input")
+# 🔐 Set your API key (not recommended for production)
+os.environ["GOOGLE_API_KEY"] = "GOOGLE_API_KEY"
 
-if not api_key:
-    st.warning("Please enter your Google API key in the sidebar.")
-    st.stop()
+llm = ChatGoogleGenerativeAI(model="gemini-2.0-flash")
 
-if st.sidebar.button("🧹 Reset Chat"):
-    st.session_state.chat_history = [SystemMessage(content="You are a helpful assistant.")]
-    st.rerun()
+# Streamlit App UI
+st.title("🤖 Gemini Chatbot")
+st.markdown("Type a message and press Enter to chat with the AI. Type `quit` to stop.")
 
-# --- LLM Setup ---
-llm = ChatGoogleGenerativeAI(
-    model="gemini-2.0-flash",
-    google_api_key="AIzaSyB9M5GA9fiH_lXQGhxvx4CWwkLHXdiNZ1U"
-)
-
-# --- Initialize chat history ---
+# Initialize chat history
 if "chat_history" not in st.session_state:
     st.session_state.chat_history = [SystemMessage(content="You are a helpful assistant.")]
 
-# --- Main Chat UI ---
-st.title("🤖 Gemini Chatbot")
+# User input
+user_input = st.text_input("You:", key="input")
 
-# Show previous chat
-for message in st.session_state.chat_history:
-    with st.chat_message("user" if isinstance(message, HumanMessage) else "ai"):
-        st.markdown(message.content)
-
-# --- Input box ---
-user_input = st.chat_input("Type your message here...")
-
+# Process input
 if user_input:
-    # Display user message
-    st.chat_message("user").markdown(user_input)
-    st.session_state.chat_history.append(HumanMessage(content=user_input))
+    if user_input.lower() == "quit":
+        st.markdown("**Chat ended. Refresh to start again.**")
+    else:
+        st.session_state.chat_history.append(HumanMessage(content=user_input))
+        try:
+            result = llm.invoke(st.session_state.chat_history)
+            st.session_state.chat_history.append(AIMessage(content=result.content))
+        except Exception as e:
+            st.error(f"❌ Error: {str(e)}")
 
-    # Get response
-    try:
-        response = llm.invoke(st.session_state.chat_history)
-        st.session_state.chat_history.append(AIMessage(content=response.content))
+# Display messages
+for message in st.session_state.chat_history:
+    if isinstance(message, HumanMessage):
+        st.markdown(f"**You:** {message.content}")
+    elif isinstance(message, AIMessage):
+        st.markdown(f"**AI:** {message.content}")import os
+import streamlit as st
+from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_core.messages import HumanMessage, SystemMessage, AIMessage
 
-        # Display response
-        with st.chat_message("ai"):
-            st.markdown(response.content)
+# 🔐 Set your API key (not recommended for production)
+os.environ["GOOGLE_API_KEY"] = "GOOGLE_API_KEY"
 
-    except Exception as e:
-        st.error(f"❌ Something went wrong: {str(e)}")
+llm = ChatGoogleGenerativeAI(model="gemini-2.0-flash")
+
+# Streamlit App UI
+st.title("🤖 Gemini Chatbot")
+st.markdown("Type a message and press Enter to chat with the AI. Type `quit` to stop.")
+
+# Initialize chat history
+if "chat_history" not in st.session_state:
+    st.session_state.chat_history = [SystemMessage(content="You are a helpful assistant.")]
+
+# User input
+user_input = st.text_input("You:", key="input")
+
+# Process input
+if user_input:
+    if user_input.lower() == "quit":
+        st.markdown("**Chat ended. Refresh to start again.**")
+    else:
+        st.session_state.chat_history.append(HumanMessage(content=user_input))
+        try:
+            result = llm.invoke(st.session_state.chat_history)
+            st.session_state.chat_history.append(AIMessage(content=result.content))
+        except Exception as e:
+            st.error(f"❌ Error: {str(e)}")
+
+# Display messages
+for message in st.session_state.chat_history:
+    if isinstance(message, HumanMessage):
+        st.markdown(f"**You:** {message.content}")
+    elif isinstance(message, AIMessage):
+        st.markdown(f"**AI:** {message.content}")
