@@ -17,7 +17,7 @@ if st.sidebar.button("🧹 Reset Chat"):
 # --- LLM Setup ---
 llm = ChatGoogleGenerativeAI(
     model="gemini-2.0-flash",
-    google_api_key=GOOGLE_API_KEY
+    google_api_key="AIzaSyB9M5GA9fiH_lXQGhxvx4CWwkLHXdiNZ1U"
 )
 
 # --- Initialize chat history ---
